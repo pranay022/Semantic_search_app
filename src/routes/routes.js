@@ -7,7 +7,7 @@ const validate = require('../middleware/validate');
 router
     .route('/document')
     .post(
-        validate(validation.insertDocument),
+        // validate(validation.insertDocument),
         controller.insertDocument
     );
 
@@ -23,6 +23,18 @@ router
     .post(
         validate(validation.search),
         controller.semanticSearch
+    );
+
+router
+    .route('/all-documents')
+    .get(
+        controller.getAllDocuments
+    );
+
+router
+    .route('/delete-document/:id')
+    .delete(
+        controller.deleteDocument
     );
 
 module.exports = router;
