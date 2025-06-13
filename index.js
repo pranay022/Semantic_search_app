@@ -1,10 +1,14 @@
 const express = require('express');
 const app = express();
 const routes = require('./src/routes/routes')
+const { apiLimiter } = require('./src/middleware/ratelimiter');
+
 require('dotenv').config();
 
 
 app.use(express.json());
+
+app.use('/v1', apiLimiter)
 app.use('/v1', routes);
 
 app.use((req, res) => {
