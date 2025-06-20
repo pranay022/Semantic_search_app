@@ -1,6 +1,7 @@
 const db = require("../db/config");
 const { getEmbedding } = require("../utils/embedding");
 const { Kysely, sql } = require("kysely");
+const redisClient = require('../utils/redisClient')
 
 async function insertDocument(req, res) {
   const content = req.body.texts;
@@ -194,7 +195,14 @@ async function semanticSearch(req, res) {
       .status(400)
       .json({ error: "Invalid 'limit' provided. Must be a positive number." });
   }
+  const cacheKey = `search:${query.trim().toLowerCase()}:${limit}`;
   try {
+    const cached = await redisClient.get(cacheKey);
+    if (cached) {
+      console.log(`Found in cache ${cacheKey}`);
+      return res.status(200).json(JSON.parse(cached));
+    }
+    console.log("[CACHE MISS] Performing semantic search for:", query);
     console.log("Searching for:", query);
     const embedding = await getEmbedding(query);
     console.log("Generated query embedding with length:", embedding.length);
@@ -229,7 +237,7 @@ async function semanticSearch(req, res) {
         `- (${r.id}) [distance: ${r.distance}, similarity: ${r.similarity}] ${r.content}`
       )
     );
-
+    await redisClient.setEx(cacheKey, 300, JSON.stringify(response));
     return resultsWithSimilarity.map(({ id, content, similarity }) => ({
       id,
       content,
